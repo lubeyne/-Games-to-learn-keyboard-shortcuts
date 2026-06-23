@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klavye Kahramanları: Süper Final 🥕</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root { --purple: #ff7675; --yellow: #ffeaa7; --blue: #74b9ff; --green: #55efc4; }
+        body {
+            font-family: 'Quicksand', sans-serif; background: #55efc4; color: white; margin: 0; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; height: 100vh; transition: background 1s ease;
+        }
+
+        /* ÖĞRETMEN KONTROL PANELİ */
+        .admin-panel {
+            background: rgba(0,0,0,0.3); padding: 10px 20px; border-radius: 0 0 20px 20px;
+            display: flex; align-items: center; gap: 15px; z-index: 100; font-family: 'Fredoka One';
+        }
+        input[type=range] { cursor: pointer; width: 150px; }
+
+        .race-track {
+            width: 100%; height: 220px; background: rgba(255,255,255,0.2); position: relative;
+            border-bottom: 12px solid #5d4037; display: flex; align-items: center; margin-top: 10px;
+        }
+        .finish-carrot { position: absolute; right: 50px; font-size: 80px; z-index: 5; transition: all 0.5s; }
+        
+        .rabbit-container {
+            position: absolute; left: 20px; display: flex; flex-direction: column; align-items: center;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10;
+        }
+        .group-tag {
+            background: white; color: #333; padding: 5px 12px; border-radius: 12px;
+            font-size: 14px; font-weight: bold; font-family: 'Fredoka One'; margin-bottom: 5px;
+        }
+        .rabbit { font-size: 65px; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2)); }
+
+        #game-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 90%; }
+        #stage-label { font-family: 'Fredoka One'; font-size: 2.5em; text-shadow: 3px 3px 0 #2d3436; margin: 10px 0; }
+        .timer { font-family: 'Fredoka One'; font-size: 6em; color: #eb4d4b; text-shadow: 4px 4px 0 white; line-height: 1; }
+        .timer.danger { animation: pulse 0.5s infinite; color: #ff0000; transform: scale(1.2); }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .question-box {
+            background: white; color: #2d3436; padding: 30px; border-radius: 40px;
+            border: 12px solid #74b9ff; box-shadow: 0 15px 0 rgba(0,0,0,0.1);
+            width: 100%; max-width: 850px; text-align: center; min-height: 180px; display: flex; flex-direction: column; justify-content: center;
+        }
+        .question-text { font-size: 2.8em; font-weight: 800; margin: 0; line-height: 1.2; }
+        .answer-text { font-family: 'Fredoka One'; font-size: 5em; color: #6c5ce7; display: none; margin: 0; }
+
+        .btn {
+            font-family: 'Fredoka One'; padding: 20px 40px; font-size: 2em; cursor: pointer;
+            border: none; border-radius: 50px; background: #f0932b; color: white;
+            box-shadow: 0 8px 0 #d35400; margin-top: 20px;
+        }
+        .group-btns { display: none; gap: 20px; margin-top: 20px; }
+        .g-btn {
+            width: 90px; height: 90px; border-radius: 50%; border: 5px solid white;
+            cursor: pointer; font-family: 'Fredoka One'; font-size: 1.8em; color: white;
+        }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .score-list { background: white; color: #2d3436; padding: 30px; border-radius: 40px; width: 400px; }
+        .score-item { display: flex; justify-content: space-between; font-size: 2.5em; font-family: 'Fredoka One'; border-bottom: 2px dashed #eee; padding: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="admin-panel">
+    <span>⏱️ SÜRE AYARI: </span>
+    <input type="range" id="duration-slider" min="5" max="60" value="15" oninput="updateDurLabel(this.value)">
+    <span id="dur-label">15sn</span>
+</div>
+
+<div class="race-track">
+    <div class="finish-carrot" id="main-carrot">🥕</div>
+    <div class="rabbit-container" id="rabbit-0" style="bottom:10px"><div class="group-tag">SÜSLÜ 🎀</div><div class="rabbit">🐰</div></div>
+    <div class="rabbit-container" id="rabbit-1" style="bottom:80px"><div class="group-tag">HAVALI 🕶️</div><div class="rabbit">🐰</div></div>
+    <div class="rabbit-container" id="rabbit-2" style="bottom:45px"><div class="group-tag">HIZLI ⚡</div><div class="rabbit">🐰</div></div>
+</div>
+
+<div id="game-container">
+    <div id="stage-label">YÜKLENİYOR...</div>
+    <div class="timer" id="timer">15</div>
+    <div class="question-box">
+        <p class="question-text" id="q-text">Hazır mısınız?</p>
+        <p class="answer-text animate__animated animate__bounceIn" id="a-text">-</p>
+    </div>
+    <button class="btn" id="ans-btn" onclick="showAnswer()">CEVABI GÖSTER 👀</button>
+    <div class="group-btns" id="group-btns">
+        <button class="g-btn" style="background:#ff7675" onclick="addScore(0)">G1</button>
+        <button class="g-btn" style="background:#74b9ff" onclick="addScore(1)">G2</button>
+        <button class="g-btn" style="background:#55efc4" onclick="addScore(2)">G3</button>
+        <button class="btn" onclick="checkNext()" style="background:#6c5ce7; margin-left:20px">İLERLE ➔</button>
+    </div>
+</div>
+
+<div id="inter-screen" class="overlay">
+    <h1 style="font-size: 4em; font-family: 'Fredoka One'; color: gold;">AŞAMA SKORLARI 🏆</h1>
+    <div class="score-list" id="inter-list"></div>
+    <button class="btn" onclick="closeInter()">SIRADAKİ AŞAMA 🚀</button>
+</div>
+
+<div id="final-screen" class="overlay">
+    <div style="font-size: 150px;">🐰🥕✨</div>
+    <h1 style="font-size: 3em; font-family: 'Fredoka One';">TEBRİKLER ŞAMPİYON!</h1>
+    <h2 id="winner-text" style="font-size: 7em; font-family: 'Fredoka One'; color: gold;">GRUP 1</h2>
+    <div class="score-list" id="final-list"></div>
+    <button class="btn" onclick="location.reload()">BAŞTAN BAŞLA 🔄</button>
+</div>
+
+<script>
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    function playSfx(freq, type, dur, vol=0.1) {
+        const o = audio.createOscillator(); const g = audio.createGain();
+        o.type = type; o.frequency.setValueAtTime(freq, audio.currentTime);
+        g.gain.setValueAtTime(vol, audio.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + dur);
+        o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + dur);
+    }
+
+    const stages = [
+        { n: "1. AŞAMA: ISINMA 🌱", bg: "#55efc4" },
+        { n: "2. AŞAMA: HIZ TURU ⚡", bg: "#fab1a0" },
+        { n: "3. AŞAMA: SENARYO TURU 🧠", bg: "#74b9ff" },
+        { n: "4. AŞAMA: TARAYICI TURU 🌐", bg: "#a29bfe" },
+        { n: "5. AŞAMA: DOĞRU/YANLIŞ ❌✅", bg: "#ff7675" },
+        { n: "6. AŞAMA: EKSİK TUŞ 🧩", bg: "#fdcb6e" },
+        { n: "7. AŞAMA: FİNAL GÖREVİ 🏆", bg: "#6c5ce7" },
+        { n: "💡 EKSTRA SORULAR", bg: "#00b894" }
+    ];
+
+    const rawQuestions = [
+        // Aşama 1
+        { s:0, q: "Bir yazıyı kopyalamak istiyorsun?", a: "CTRL + C" },
+        { s:0, q: "Bir şeyi yapıştırmak için hangi tuş?", a: "CTRL + V" },
+        { s:0, q: "Metni kesmek istiyorsun?", a: "CTRL + X" },
+        { s:0, q: "Yanlış yaptın, geri almak istiyorsun?", a: "CTRL + Z" },
+        { s:0, q: "Hepsini seçmek istiyorsun?", a: "CTRL + A" },
+        // Aşama 2
+        { s:1, q: "Kaydet!", a: "CTRL + S" },
+        { s:1, q: "Yazdır!", a: "CTRL + P" },
+        { s:1, q: "Yeni dosya aç!", a: "CTRL + N" },
+        { s:1, q: "Sayfada kelime ara!", a: "CTRL + F" },
+        // Aşama 3
+        { s:2, q: "Ödevini yazdın ama yanlışlıkla sildin 😱 geri getir!", a: "CTRL + Z" },
+        { s:2, q: "Bir paragrafı başka yere taşımak istiyorsun?", a: "CTRL + X" },
+        { s:2, q: "Uzun bir yazıda ‘okul’ kelimesini arıyorsun?", a: "CTRL + F" },
+        // Aşama 4
+        { s:3, q: "Yeni sekme aç!", a: "CTRL + T" },
+        { s:3, q: "Açık sekmeyi kapat!", a: "CTRL + W" },
+        { s:3, q: "Sayfayı yenile!", a: "F5" },
+        // Aşama 5
+        { s:4, q: "Ctrl + Z = İleri al? (D/Y)", a: "YANLIŞ (Geri Al)" },
+        { s:4, q: "Ctrl + S = Kaydet? (D/Y)", a: "DOĞRU" },
+        // Aşama 6
+        { s:5, q: "Ctrl + ? = Kopyala", a: "C" },
+        { s:5, q: "Ctrl + ? = Yapıştır", a: "V" },
+        // Aşama 7
+        { s:6, q: "Bir yazıyı kopyala ve iki kez yapıştır!", a: "CTRL+C -> CTRL+V+V" },
+        // Ekstra
+        { s:7, q: "Tek harfi büyük yazmak için?", a: "SHIFT" },
+        { s:7, q: "Sürekli büyük harf nasıl açılır?", a: "CAPS LOCK" }
+    ];
+
+    let cur = 0, scores = [0,0,0], timer, globalDur = 15;
+
+    function updateDurLabel(v) { 
+        globalDur = parseInt(v);
+        document.getElementById('dur-label').innerText = v + "sn"; 
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        let time = globalDur;
+        const display = document.getElementById('timer');
+        display.classList.remove('danger');
+        display.innerText = time;
+        document.body.style.background = stages[rawQuestions[cur].s].bg;
+        document.getElementById('stage-label').innerText = stages[rawQuestions[cur].s].n;
+
+        timer = setInterval(() => {
+            time--;
+            display.innerText = time;
+            if(time <= 3 && time > 0) {
+                display.classList.add('danger');
+                playSfx(150, 'square', 0.2, 0.2);
+            } else if (time > 0) {
+                playSfx(400, 'sine', 0.05);
+            }
+            if(time <= 0) { clearInterval(timer); showAnswer(); }
+        }, 1000);
+    }
+
+    function showAnswer() {
+        clearInterval(timer);
+        document.getElementById('q-text').style.display = 'none';
+        document.getElementById('a-text').innerText = rawQuestions[cur].a;
+        document.getElementById('a-text').style.display = 'block';
+        document.getElementById('ans-btn').style.display = 'none';
+        document.getElementById('group-btns').style.display = 'flex';
+        playSfx(800, 'triangle', 0.5);
+    }
+
+    function addScore(i) {
+        scores[i] += 10;
+        playSfx(1000, 'square', 0.2);
+        const move = (scores[i] / 200) * (window.innerWidth - 250);
+        document.getElementById(`rabbit-${i}`).style.left = (20 + move) + "px";
+        confetti({ particleCount: 20, spread: 50, origin: { y: 0.8 } });
+    }
+
+    function checkNext() {
+        if(cur < rawQuestions.length - 1 && rawQuestions[cur].s !== rawQuestions[cur+1].s) {
+            showInter();
+        } else if (cur >= rawQuestions.length - 1) {
+            showFinal();
+        } else {
+            cur++; resetUI();
+        }
+    }
+
+    function resetUI() {
+        document.getElementById('q-text').innerText = rawQuestions[cur].q;
+        document.getElementById('q-text').style.display = 'block';
+        document.getElementById('a-text').style.display = 'none';
+        document.getElementById('ans-btn').style.display = 'block';
+        document.getElementById('group-btns').style.display = 'none';
+        startTimer();
+    }
+
+    function showInter() {
+        document.getElementById('inter-list').innerHTML = scores.map((s, i) => `<div class="score-item"><span>Grup ${i+1}</span><span>${s}</span></div>`).join('');
+        document.getElementById('inter-screen').style.display = 'flex';
+    }
+
+    function closeInter() {
+        document.getElementById('inter-screen').style.display = 'none';
+        cur++; resetUI();
+    }
+
+    function showFinal() {
+        const winIdx = scores.indexOf(Math.max(...scores));
+        document.getElementById(`rabbit-${winIdx}`).style.left = (window.innerWidth - 150) + "px";
+        setTimeout(() => {
+            document.getElementById('main-carrot').style.transform = "scale(0)";
+            confetti({ particleCount: 400, spread: 150, origin: { y: 0.6 } });
+        }, 800);
+        setTimeout(() => {
+            document.getElementById('winner-text').innerText = "GRUP " + (winIdx + 1);
+            document.getElementById('final-list').innerHTML = scores.map((s, i) => `<div class="score-item"><span>Grup ${i+1}</span><span>${s}</span></div>`).join('');
+            document.getElementById('final-screen').style.display = 'flex';
+        }, 5000);
+    }
+
+    resetUI();
+</script>
+</body>
+</html>
